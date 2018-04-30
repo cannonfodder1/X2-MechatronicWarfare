@@ -1,4 +1,4 @@
-// Shamelessly stolen from the Spark Pugilist Class mod
+// Original concept taken from the Spark Puglist Class mod
 class X2Effect_HalfDamage extends X2Effect_DLC_3StrikeDamage config(UpdateSpark);
 
 function WeaponDamageValue GetBonusEffectDamageValue(XComGameState_Ability AbilityState, XComGameState_Unit SourceUnit, XComGameState_Item SourceWeapon, StateObjectReference TargetRef)
