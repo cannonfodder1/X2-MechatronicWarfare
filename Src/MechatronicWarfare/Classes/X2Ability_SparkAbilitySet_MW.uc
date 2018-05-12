@@ -1,6 +1,9 @@
 class X2Ability_SparkAbilitySet_MW extends X2Ability
 	dependson(XComGameStateContext_Ability) config(GameData_SoldierSkills);
 
+	var config int MWREPAIR_HEAL;
+	var config int UNYIELDING_EXTRAHEAL;
+
 	var config int KS_COOLDOWN;
 
 	var config int CS_COOLDOWN;
@@ -70,9 +73,11 @@ static function X2AbilityTemplate RepairMW()
 	local X2AbilityCharges_Repair               Charges;
 	local X2AbilityCost_Charges                 ChargeCost;
 	local X2AbilityCost_ActionPoints            ActionPointCost;
-	local X2Effect_ApplyMedikitHeal             HealEffect;
+	local X2Effect_ApplyRepairHeal				HealEffect;
 	local X2Effect_RepairArmor					ArmorEffect;
 	local X2Condition_UnitProperty              UnitCondition;
+	local X2Effect_RemoveEffectsByDamageType	RemoveEffects;
+	local name HealType;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'RepairMW');
 	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
@@ -95,12 +100,21 @@ static function X2AbilityTemplate RepairMW()
 	ActionPointCost.DoNotConsumeAllSoldierAbilities.AddItem('RapidRepair');
 	Template.AbilityCosts.AddItem(ActionPointCost);
 
-	HealEffect = new class'X2Effect_ApplyMedikitHeal';
-	HealEffect.PerUseHP = 6;
+	HealEffect = new class'X2Effect_ApplyRepairHeal';
+	HealEffect.PerUseHP = default.MWREPAIR_HEAL;
+	HealEffect.IncreasedHealAbility = 'Unyielding';
+	HealEffect.IncreasedPerUseHP = default.UNYIELDING_EXTRAHEAL;
 	Template.AddTargetEffect(HealEffect);
-	
+
 	ArmorEffect = new class'X2Effect_RepairArmor';
 	Template.AddTargetEffect(ArmorEffect);
+
+	RemoveEffects = new class'X2Effect_RemoveEffectsByDamageType';
+	foreach class'X2Ability_DefaultAbilitySet'.default.MedikitHealEffectTypes(HealType)
+	{
+		RemoveEffects.DamageTypesToRemove.AddItem(HealType);
+	}
+	Template.AddTargetEffect(RemoveEffects);
 
 	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
 	Template.AddShooterEffectExclusions();
@@ -609,7 +623,7 @@ static function X2AbilityTemplate BrawlerTrigger()
 	local X2AbilityTrigger_EventListener			EventListener;
 	local X2Condition_UnitProperty					SourceNotConcealedCondition;
 	local X2Condition_Visibility					TargetVisibilityCondition;
-	local X2Effect_DLC_3StrikeDamage				DamageEffect;
+	local X2Effect_HalfDamage						DamageEffect;
 	local X2Condition_PunchRange					RangeCondition;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'BrawlerTrigger');
@@ -676,8 +690,9 @@ static function X2AbilityTemplate BrawlerTrigger()
 	Template.AbilityShooterConditions.AddItem(SourceNotConcealedCondition);
 
 	Template.bAllowBonusWeaponEffects = true;
-
-	DamageEffect = new class'X2Effect_DLC_3StrikeDamage';
+	
+	DamageEffect = new class'X2Effect_HalfDamage';
+	DamageEffect.EnvironmentalDamageAmount = 20;
 	Template.AddTargetEffect(DamageEffect);
 
 	//Prevent repeatedly hammering on a unit with Brawler triggers.
@@ -987,29 +1002,22 @@ static function X2AbilityTemplate IntimidateTriggerMW()
 static function X2AbilityTemplate Triangulation()
 {
 	local X2AbilityTemplate			Template;
-	local X2Effect_Triangulation	Effect;
+	local X2Effect_CoveringFire		Effect;
 	
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'Triangulation');
+	Template = PurePassive('Triangulation', "img:///UILibrary_MW.UIPerk_triangulation", false, 'eAbilitySource_Perk', true);
 	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
 
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
-	Template.Hostility = eHostility_Neutral;
-	Template.IconImage = "img:///UILibrary_MW.UIPerk_triangulation";
-
-	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilityTargetStyle = default.SelfTarget;
-	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
-	
-    Effect = new class'X2Effect_Triangulation';
+	Effect = new class'X2Effect_CoveringFire';
 	Effect.BuildPersistentEffect(1, true, false, false);
-	Effect.EffectName = 'Triangulation';
-	Effect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	Effect.AbilityToActivate = 'TriangulationTrigger';
+	Effect.GrantActionPoint = 'triangulate';
+	Effect.bPreEmptiveFire = false;
+	Effect.bDirectAttackOnly = true;
+	Effect.bOnlyDuringEnemyTurn = true;
+	Effect.bUseMultiTargets = false;
+	Effect.EffectName = 'TriangulationWatchEffect';
 	Template.AddTargetEffect(Effect);
 	
-	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
-
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	Template.AdditionalAbilities.AddItem('TriangulationTrigger');
 
 	return Template;
@@ -1021,6 +1029,7 @@ static function X2AbilityTemplate TriangulationTrigger()
 	local X2AbilityTrigger_EventListener		EventListener;
 	local X2Condition_UnitEffects				Condition;
 	local X2Effect_HoloTarget					Effect;
+	local X2AbilityCost_ReserveActionPoints		ActionPointCost;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'TriangulationTrigger');
 	Template.IconImage = "img:///UILibrary_MW.UIPerk_triangulation";
@@ -1028,39 +1037,40 @@ static function X2AbilityTemplate TriangulationTrigger()
 	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
 	Template.Hostility = eHostility_Neutral;
 	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilityTargetStyle = default.SimpleSingleTarget;
+	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.bShowActivation = true;
 	Template.bFrameEvenWhenUnitIsHidden = true;
 	Template.bCrossClassEligible = false;
+
+	ActionPointCost = new class'X2AbilityCost_ReserveActionPoints';
+	ActionPointCost.iNumPoints = 1;
+	ActionPointCost.AllowedTypes.Length = 0;
+	ActionPointCost.AllowedTypes.AddItem('triangulate');
+	Template.AbilityCosts.AddItem(ActionPointCost);
 	
 	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
 	Condition = new class'X2Condition_UnitEffects';
 	Condition.AddExcludeEffect(class'X2AbilityTemplateManager'.default.StunnedName, 'AA_UnitIsStunned');
 	Template.AbilityShooterConditions.AddItem(Condition);
 
-	// trigger on taking damage
-	EventListener = new class'X2AbilityTrigger_EventListener';
-	EventListener.ListenerData.Deferral = ELD_OnStateSubmitted;
-	EventListener.ListenerData.EventID = class'X2Effect_Triangulation'.default.Triangulation_TriggeredName;
-	EventListener.ListenerData.Filter = eFilter_Unit;
-	EventListener.ListenerData.EventFn = class'XComGameState_Ability'.static.VoidRiftInsanityListener;
-	Template.AbilityTriggers.AddItem(EventListener);
-
 	// build the aim buff
     Effect = new class'X2Effect_HoloTarget';
 	Effect.HitMod = default.TRIANGULATION_HITMOD;
 	Effect.BuildPersistentEffect(1, false, false, false, eGameRule_PlayerTurnEnd);
-	Effect.SetDisplayInfo(ePerkBuff_Penalty, "Triangulated", "All enemies of this unit gain extra Aim when firing at it.", "img:///UILibrary_PerkIcons.UIPerk_holotargeting", true);
+	Effect.SetDisplayInfo(ePerkBuff_Penalty, "Triangulated", "All enemies of this unit gain extra Aim when firing at it.", "img:///UILibrary_MW.UIPerk_triangulation", true);
 	Effect.bRemoveWhenTargetDies = true;
 	Effect.bUseSourcePlayerState = true;
 	Template.AddTargetEffect(Effect);
+	
+	Template.AbilityTriggers.AddItem(new class'X2AbilityTrigger_Placeholder');
+	Template.AbilityTargetConditions.AddItem(default.LivingHostileUnitDisallowMindControlProperty);
 
 	Template.CustomFireAnim = 'NO_Intimidate';
 	Template.bShowActivation = true;
 	Template.CinescriptCameraType = "Spark_Intimidate";
 
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-	Template.BuildInterruptGameStateFn = TypicalAbility_BuildInterruptGameState;
+	//Template.BuildInterruptGameStateFn = TypicalAbility_BuildInterruptGameState;
 	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 
 	return Template;

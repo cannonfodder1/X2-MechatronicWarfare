@@ -1,4 +1,4 @@
-// Original concept taken from the Spark Puglist Class mod
+// Shamelessly stolen from the Spark Puglist Class mod
 class X2AbilityCost_SparkRefund extends X2AbilityCost_ActionPoints;
 
 var name RefundedActionPointType;

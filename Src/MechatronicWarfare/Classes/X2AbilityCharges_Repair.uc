@@ -6,7 +6,7 @@ class X2AbilityCharges_Repair extends X2AbilityCharges config(GameData_SoldierSk
 var config int T1_CHARGES;
 var config int T2_CHARGES;
 var config int T3_CHARGES;
-var config int UNYIELDING_REPAIR;
+//var config int UNYIELDING_REPAIR;
 
 simulated function int GetInitialCharges(XComGameState_Ability Ability, XComGameState_Unit Unit)
 {
@@ -44,12 +44,12 @@ simulated function int GetInitialCharges(XComGameState_Ability Ability, XComGame
 			RepairCharges = default.T2_CHARGES;
 		}
 	}
-
+	/*
 	if (UnitState.HasSoldierAbility('Unyielding'))
 	{
 		RepairCharges += default.UNYIELDING_REPAIR;
 		`log("SPARK has Unyielding, granting extra Repair charges");
 	}
-
+	*/
 	return RepairCharges;
 }
