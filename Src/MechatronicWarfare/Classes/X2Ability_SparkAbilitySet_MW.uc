@@ -2,7 +2,8 @@ class X2Ability_SparkAbilitySet_MW extends X2Ability
 	dependson(XComGameStateContext_Ability) config(GameData_SoldierSkills);
 
 	var config int MWREPAIR_HEAL;
-	var config int UNYIELDING_EXTRAHEAL;
+	var config int MWREPAIR_COOLDOWN;
+	var config int HEAVYDUTY_EXTRAHEAL;
 
 	var config int KS_COOLDOWN;
 
@@ -37,19 +38,25 @@ class X2Ability_SparkAbilitySet_MW extends X2Ability
 
 	var config int EMERGENTAI_HACK;
 	var config int EMERGENTAI_AIM;
+
+	var config int REBOOT_HACK;
+	var config int REBOOT_AIM;
+	var config int REBOOT_MOB;
 	
 static function array<X2DataTemplate> CreateTemplates()
 {
 	local array<X2DataTemplate> Templates;
 	
 	Templates.AddItem(RepairMW());
-	Templates.AddItem(RedundantSystems());
+	Templates.AddItem(Reboot());
+	Templates.AddItem(RebootTriggered());
+	Templates.AddItem(RedunSysTriggered());
 	Templates.AddItem(KineticStrike());
-	Templates.AddItem(CombinedArms());
 	Templates.AddItem(PurePassive('RapidRepair', "img:///UILibrary_MW.UIPerk_rapid_repair"));
+	Templates.AddItem(PurePassive('HeavyRepair', "img:///UILibrary_MW.UIPerk_heavyduty"));
+	Templates.AddItem(RedundantSystems());
 	Templates.AddItem(ConcussiveStrike());
 	Templates.AddItem(Collateral());
-	Templates.AddItem(Unyielding());
 	Templates.AddItem(Obliterator());
 	Templates.AddItem(DisablingBurst());
 	Templates.AddItem(BrawlerProtocol());
@@ -73,6 +80,7 @@ static function X2AbilityTemplate RepairMW()
 	local X2AbilityCharges_Repair               Charges;
 	local X2AbilityCost_Charges                 ChargeCost;
 	local X2AbilityCost_ActionPoints            ActionPointCost;
+	local X2AbilityCooldown						Cooldown;
 	local X2Effect_ApplyRepairHeal				HealEffect;
 	local X2Effect_RepairArmor					ArmorEffect;
 	local X2Condition_UnitProperty              UnitCondition;
@@ -100,10 +108,14 @@ static function X2AbilityTemplate RepairMW()
 	ActionPointCost.DoNotConsumeAllSoldierAbilities.AddItem('RapidRepair');
 	Template.AbilityCosts.AddItem(ActionPointCost);
 
+	Cooldown = new class'X2AbilityCooldown';
+	Cooldown.iNumTurns = default.MWREPAIR_COOLDOWN;
+	Template.AbilityCooldown = Cooldown;
+
 	HealEffect = new class'X2Effect_ApplyRepairHeal';
 	HealEffect.PerUseHP = default.MWREPAIR_HEAL;
-	HealEffect.IncreasedHealAbility = 'Unyielding';
-	HealEffect.IncreasedPerUseHP = default.UNYIELDING_EXTRAHEAL;
+	HealEffect.IncreasedHealAbility = 'HeavyRepair';
+	HealEffect.IncreasedPerUseHP = default.HEAVYDUTY_EXTRAHEAL;
 	Template.AddTargetEffect(HealEffect);
 
 	ArmorEffect = new class'X2Effect_RepairArmor';
@@ -146,15 +158,16 @@ static function X2AbilityTemplate RepairMW()
 	return Template;
 }
 
-static function X2AbilityTemplate RedundantSystems()
+static function X2AbilityTemplate Reboot()
 {
-	local X2AbilityTemplate						Template;
+	local X2AbilityTemplate             Template;
+	local X2Effect_Sustain              SustainEffect;
 
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'RedundantSystems');
-	Template.IconImage = "img:///UILibrary_MW.UIPerk_redundant_systems";
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'Reboot');
 
+	Template.IconImage = "img:///UILibrary_MW.UIPerk_reboot";
 	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
 	Template.Hostility = eHostility_Neutral;
 	Template.bIsPassive = true;
 
@@ -162,9 +175,159 @@ static function X2AbilityTemplate RedundantSystems()
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
 
-	Template.AdditionalAbilities.AddItem('Sustain');
+	SustainEffect = new class'X2Effect_Sustain';
+	SustainEffect.BuildPersistentEffect(1, true, true);
+	SustainEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,, Template.AbilitySourceName);
+	Template.AddTargetEffect(SustainEffect);
 
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	// Note: no visualization on purpose!
+
+	Template.AdditionalAbilities.AddItem('RebootTriggered');
+
+	return Template;
+}
+
+static function X2DataTemplate RebootTriggered()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_Stasis                   StasisEffect;
+	local X2Effect_PersistentStatChange		HackEffect;
+	local X2AbilityTrigger_EventListener    EventTrigger;
+	local X2Condition_UnitEffects			UnitEffects;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'RebootTriggered');
+
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_MW.UIPerk_reboot";
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+
+	StasisEffect = new class'X2Effect_Stasis';
+	StasisEffect.BuildPersistentEffect(1, false, false, false, eGameRule_PlayerTurnBegin);
+	StasisEffect.bUseSourcePlayerState = true;
+	StasisEffect.bRemoveWhenTargetDies = true;
+	StasisEffect.SetDisplayInfo(ePerkBuff_Penalty, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage);
+	StasisEffect.StunStartAnim = 'HL_PsiSustainStart';
+	StasisEffect.bSkipFlyover = true;
+	Template.AddTargetEffect(StasisEffect);
+	
+	HackEffect = new class'X2Effect_PersistentStatChange';
+	HackEffect.BuildPersistentEffect(1, true, false);
+	HackEffect.SetDisplayInfo(ePerkBuff_Penalty, Template.LocFriendlyName, "This unit has been Rebooted from catastrophic damage and is suffering -30 aim, -3 mobility, and -100 hack.", Template.IconImage,,, Template.AbilitySourceName); 
+	HackEffect.AddPersistentStatChange(eStat_Hacking, default.REBOOT_HACK);
+	HackEffect.AddPersistentStatChange(eStat_Offense, default.REBOOT_AIM);
+	HackEffect.AddPersistentStatChange(eStat_Mobility, default.REBOOT_MOB);
+	Template.AddTargetEffect(HackEffect);
+
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.TechBonusLabel, eStat_Hacking, default.REBOOT_HACK);
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.TechBonusLabel, eStat_Offense, default.REBOOT_AIM);
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.TechBonusLabel, eStat_Mobility, default.REBOOT_MOB);
+
+	EventTrigger = new class'X2AbilityTrigger_EventListener';
+	EventTrigger.ListenerData.Deferral = ELD_OnStateSubmitted;
+	EventTrigger.ListenerData.EventID = class'X2Effect_Sustain'.default.SustainEvent;
+	EventTrigger.ListenerData.Filter = eFilter_Unit;
+	EventTrigger.ListenerData.EventFn = class'XComGameState_Ability'.static.AbilityTriggerEventListener_Self;
+	Template.AbilityTriggers.AddItem(EventTrigger);
+
+	UnitEffects = new class'X2Condition_UnitEffects';
+	UnitEffects.AddExcludeEffect('RedunSysEffect', 'AA_DuplicateEffectIgnored');
+	Template.AbilityShooterConditions.AddItem(UnitEffects);
+
+	Template.PostActivationEvents.AddItem(class'X2Effect_Sustain'.default.SustainTriggeredEvent);
+	
+	Template.bSkipFireAction = true;
+	Template.FrameAbilityCameraType = eCameraFraming_Never;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+
+	return Template;
+}
+
+static function X2AbilityTemplate RedundantSystems()
+{
+	local X2AbilityTemplate             Template;
+	local X2Effect_Persistent           PersistentEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'RedundantSystems');
+
+	Template.IconImage = "img:///UILibrary_MW.UIPerk_redundant_systems";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bIsPassive = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	//  This is a dummy effect so that an icon shows up in the UI.
+	PersistentEffect = new class'X2Effect_Persistent';
+	PersistentEffect.BuildPersistentEffect(1, true, false);
+	PersistentEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.LocLongDescription, Template.IconImage,,, Template.AbilitySourceName);
+	PersistentEffect.EffectName = 'RedunSysEffect';
+	Template.AddTargetEffect(PersistentEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	// Note: no visualization on purpose!
+
+	Template.bCrossClassEligible = false;
+	
+	Template.AdditionalAbilities.AddItem('RedunSysTriggered');
+
+	return Template;
+}
+
+// Identical to the above ability but requires Redundant Systems and doesn't cast debuffs on the SPARK
+static function X2DataTemplate RedunSysTriggered()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_Stasis                   StasisEffect;
+	local X2AbilityTrigger_EventListener    EventTrigger;
+	local X2Condition_UnitEffects			UnitEffects;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'RedunSysTriggered');
+
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_MW.UIPerk_redundant_systems";
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+
+	StasisEffect = new class'X2Effect_Stasis';
+	StasisEffect.BuildPersistentEffect(1, false, false, false, eGameRule_PlayerTurnBegin);
+	StasisEffect.bUseSourcePlayerState = true;
+	StasisEffect.bRemoveWhenTargetDies = true;
+	StasisEffect.SetDisplayInfo(ePerkBuff_Penalty, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage);
+	StasisEffect.StunStartAnim = 'HL_PsiSustainStart';
+	StasisEffect.bSkipFlyover = true;
+	Template.AddTargetEffect(StasisEffect);
+
+	EventTrigger = new class'X2AbilityTrigger_EventListener';
+	EventTrigger.ListenerData.Deferral = ELD_OnStateSubmitted;
+	EventTrigger.ListenerData.EventID = class'X2Effect_Sustain'.default.SustainEvent;
+	EventTrigger.ListenerData.Filter = eFilter_Unit;
+	EventTrigger.ListenerData.EventFn = class'XComGameState_Ability'.static.AbilityTriggerEventListener_Self;
+	Template.AbilityTriggers.AddItem(EventTrigger);
+
+	UnitEffects = new class'X2Condition_UnitEffects';
+	UnitEffects.AddRequireEffect('RedunSysEffect', 'AA_DuplicateEffectIgnored');
+	Template.AbilityShooterConditions.AddItem(UnitEffects);
+
+	Template.PostActivationEvents.AddItem(class'X2Effect_Sustain'.default.SustainTriggeredEvent);
+	
+	Template.bSkipFireAction = true;
+	Template.FrameAbilityCameraType = eCameraFraming_Never;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 
 	return Template;
 }
@@ -256,31 +419,6 @@ static function X2AbilityTemplate KineticStrike()
 //END AUTOGENERATED CODE: Template Overrides 'Strike'
 
 	return Template;
-}
-
-static function X2AbilityTemplate CombinedArms()
-{
-	local X2AbilityTemplate					Template;
-
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'CombinedArms');
-
-	Template.IconImage = "img:///UILibrary_MW.UIPerk_defilade";
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
-	Template.Hostility = eHostility_Neutral;
-	Template.bIsPassive = true;
-
-	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilityTargetStyle = default.SelfTarget;
-	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
-
-	Template.AdditionalAbilities.AddItem('Shredder');
-	Template.AdditionalAbilities.AddItem('AdaptiveAim');
-
-	Template.bCrossClassEligible = false;
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-
-	return Template;		
 }
 
 static function X2AbilityTemplate ConcussiveStrike()
@@ -429,7 +567,7 @@ static function X2AbilityTemplate Collateral()
 	Template.AbilityMultiTargetStyle = RadiusMultiTarget;
 
 	DamageEffect = new class'X2Effect_CollateralDamage';
-	DamageEffect.BONUS_MULT = 0.5;
+	DamageEffect.BONUS_MULT = 0.25;
 	DamageEffect.MIN_BONUS = 1;
 	DamageEffect.EnvironmentalDamageAmount = default.COLLATERAL_ENVDMG;
 	DamageEffect.AllowArmor = true;
@@ -451,35 +589,6 @@ static function X2AbilityTemplate Collateral()
 //END AUTOGENERATED CODE: Template Overrides 'Demolition'
 
 	return Template;
-}
-
-static function X2AbilityTemplate Unyielding()
-{
-	local X2AbilityTemplate					Template;
-	local X2Effect_Unyielding				CritModifier;
-
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'Unyielding');
-
-	Template.IconImage = "img:///UILibrary_MW.UIPerk_unyielding";
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
-	Template.Hostility = eHostility_Neutral;
-	Template.bIsPassive = true;
-
-	Template.AbilityToHitCalc = default.DeadEye;
-	Template.AbilityTargetStyle = default.SelfTarget;
-	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
-
-	CritModifier = new class 'X2Effect_Unyielding';
-	CritModifier.CritDef_Bonus = 100;
-	CritModifier.BuildPersistentEffect (1, true, false, true);
-	CritModifier.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
-	Template.AddTargetEffect (CritModifier);
-
-	Template.bCrossClassEligible = false;
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-
-	return Template;		
 }
 
 static function X2AbilityTemplate Obliterator()
@@ -1026,7 +1135,6 @@ static function X2AbilityTemplate Triangulation()
 static function X2AbilityTemplate TriangulationTrigger()
 {
 	local X2AbilityTemplate						Template;
-	local X2AbilityTrigger_EventListener		EventListener;
 	local X2Condition_UnitEffects				Condition;
 	local X2Effect_HoloTarget					Effect;
 	local X2AbilityCost_ReserveActionPoints		ActionPointCost;
