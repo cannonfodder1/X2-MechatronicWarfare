@@ -16,7 +16,6 @@ simulated protected function OnEffectAdded(const out EffectAppliedData ApplyEffe
 	if (Ability != none && TargetUnit != none)
 	{
 		TargetUnit.Shredded = 0;
-		`Log("Shredded Armor Repaired");
 	}
 }
 
@@ -27,7 +26,7 @@ simulated function AddX2ActionsForVisualization(XComGameState VisualizeGameState
 
 	SoundAndFlyOver = X2Action_PlaySoundAndFlyOver(class'X2Action_PlaySoundAndFlyOver'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
 	Message = "Shredded Armor Repaired";
-	SoundAndFlyOver.SetSoundAndFlyOverParameters(None, Message, '', eColor_Good);
+	SoundAndFlyOver.SetSoundAndFlyOverParameters(None, Message, '', eColor_Good, "img:///UILibrary_MW.UIPerk_repair");
 }
 
 simulated function AddX2ActionsForVisualization_Tick(XComGameState VisualizeGameState, out VisualizationActionMetadata ActionMetadata, const int TickIndex, XComGameState_Effect EffectState)

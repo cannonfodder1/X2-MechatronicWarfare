@@ -20,7 +20,11 @@ simulated protected function OnEffectAdded(const out EffectAppliedData ApplyEffe
 	Ability = XComGameState_Ability(NewGameState.GetGameStateForObjectID(ApplyEffectParameters.AbilityStateObjectRef.ObjectID));
 	if (Ability == none)
 		Ability = XComGameState_Ability(History.GetGameStateForObjectID(ApplyEffectParameters.AbilityStateObjectRef.ObjectID));
+	
 	TargetUnit = XComGameState_Unit(kNewTargetState);
+	SourceObjectID = ApplyEffectParameters.SourceStateObjectRef.ObjectID;
+	SourceUnit = XComGameState_Unit(History.GetGameStateForObjectID(SourceObjectID));
+	
 	if (Ability != none && TargetUnit != none)
 	{
 		HealAmount = PerUseHP;
@@ -44,8 +48,6 @@ simulated protected function OnEffectAdded(const out EffectAppliedData ApplyEffe
 		TargetUnit.ModifyCurrentStat(eStat_HP, HealAmount);
 		`TRIGGERXP('XpHealDamage', ApplyEffectParameters.SourceStateObjectRef, kNewTargetState.GetReference(), NewGameState);
 
-		SourceObjectID = ApplyEffectParameters.SourceStateObjectRef.ObjectID;
-		SourceUnit = XComGameState_Unit(History.GetGameStateForObjectID(SourceObjectID));
 		if ((SourceObjectID != TargetUnit.ObjectID) && SourceUnit.CanEarnSoldierRelationshipPoints(TargetUnit)) // pmiller - so that you can't have a relationship with yourself
 		{
 			SourceUnit = XComGameState_Unit(NewGameState.ModifyStateObject(class'XComGameState_Unit', SourceObjectID));
@@ -60,7 +62,7 @@ simulated function AddX2ActionsForVisualization(XComGameState VisualizeGameState
 	local XComGameState_Unit OldUnit, NewUnit;
 	local X2Action_PlaySoundAndFlyOver SoundAndFlyOver;
 	local int Healed;
-	local string Msg;
+	local string Message;
 
 	OldUnit = XComGameState_Unit(ActionMetadata.StateObject_OldState);
 	NewUnit = XComGameState_Unit(ActionMetadata.StateObject_NewState);
@@ -68,13 +70,13 @@ simulated function AddX2ActionsForVisualization(XComGameState VisualizeGameState
 	if (OldUnit != none && NewUnit != None)
 	{
 		Healed = NewUnit.GetCurrentStat(eStat_HP) - OldUnit.GetCurrentStat(eStat_HP);
-	
-		if (Healed != 0)
-		{
+		
+		//if (Healed != 0)
+		//{
 			SoundAndFlyOver = X2Action_PlaySoundAndFlyOver(class'X2Action_PlaySoundAndFlyOver'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
-			Msg = Repl(default.HealedMessage, "<Heal/>", Healed);
-			SoundAndFlyOver.SetSoundAndFlyOverParameters(None, Msg, '', eColor_Good);
-		}		
+			Message = Repl(default.HealedMessage, "<Heal/>", Healed);
+			SoundAndFlyOver.SetSoundAndFlyOverParameters(None, Message, '', eColor_Good);
+		//}		
 	}
 }
 

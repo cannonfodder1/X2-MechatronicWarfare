@@ -9,6 +9,17 @@ var config bool SPARK_CANNON_BREAKTHROUGH;
 `define IFGETITEM(ITEMNAME) Bit=`GETITEM(`ITEMNAME); IF (bit!=None)
 `define FIXBIT(ITEMNAME, BONUSNAME) `IFGETITEM(`ITEMNAME){Bit.SetUIStatMarkup(class'XLocalizedData'.default.TechBonusLabel, eStat_Hacking, class'X2Item_DLC_Day90Weapons'.default.`BONUSNAME);}
 
+static event OnLoadedSavedGameToStrategy()
+{
+	PatchSparkTechs();
+	PatchSparkSlots();
+	PatchBreakthrough();
+	PatchBondmates();
+	PatchSparkBonding();
+
+	OnExitPostMissionSequence();
+}
+
 static event OnPostTemplatesCreated()
 {
 	PatchSparkItemT2Arm();
@@ -32,9 +43,9 @@ static event OnPostTemplatesCreated()
 	PatchSquadBuildT3Wep();
 	PatchSquadBuildT3Grem();
 
-	PatchBreakthrough();
-	PatchBondmates();
-	PatchSparkBonding();
+	PatchRepairFacility();
+	PatchCreateSpark();
+	PatchMechWar();
 }
 
 //================================================================================================================
@@ -546,6 +557,11 @@ static function PatchSquadBuildT3Grem()
 	`log("Squad T3 Gremlin Schematic Patched");
 }
 
+//================================================================================================================
+// BREAKTHROUGHS
+//================================================================================================================
+
+
 static function PatchBreakthrough()
 {
 	local X2StrategyElementTemplateManager ElementManager;
@@ -625,6 +641,12 @@ static event OnLoadedSavedGame()
 	}
 	if (bSubmit) `XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 	else `XCOMHISTORY.CleanupPendingGameState(NewGameState);
+
+	PatchSparkTechs();
+	PatchSparkSlots();
+	PatchBreakthrough();
+	PatchBondmates();
+	PatchSparkBonding();
 }
 
 static event OnExitPostMissionSequence()
@@ -654,11 +676,6 @@ static event OnExitPostMissionSequence()
 				UpdateUpgradeSlot(false);
 		}
 	}
-}
-
-static event OnLoadedSavedGameToStrategy()
-{
-	OnExitPostMissionSequence();
 }
 
 static function UpDateUpgradeSlot (optional bool bAddTech=true)
@@ -692,6 +709,10 @@ static function BreakthroughWeaponUpgradeCompleted(XComGameState NewGameState, X
 		XComHQ.ExtraUpgradeWeaponCats.AddItem('SBMarker');
 	}
 }
+
+//================================================================================================================
+// BONDMATE ABILITIES
+//================================================================================================================
 
 static function PatchBondmates()
 {
@@ -735,4 +756,287 @@ static function PatchSparkBonding()
 	CharTemplate.Abilities.AddItem('BondmateSpotter_Aim');
 	CharTemplate.Abilities.AddItem('BondmateSpotter_Aim_Adjacency');
 	CharTemplate.Abilities.AddItem('BondmateDualStrike');
+}
+
+//================================================================================================================
+// TECHNOLOGIES
+//================================================================================================================
+
+static function PatchSparkTechs()
+{
+	local XComGameStateHistory History;
+	local XComGameState NewGameState;
+	local X2TechTemplate TechTemplate;
+	//local XComGameState_Tech TechState;
+	local X2StrategyElementTemplateManager	StratMgr;
+
+	//This adds the techs to games that installed the mod in the middle of a campaign.
+	StratMgr = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+	History = `XCOMHISTORY;	
+
+	//Create a pending game state change
+	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Adding Research Templates");
+
+	//Find tech templates
+	if ( !IsResearchInHistory('BuildSpark') )
+	{
+	TechTemplate = X2TechTemplate(StratMgr.FindStrategyElementTemplate('BuildSpark'));
+	NewGameState.CreateNewStateObject(class'XComGameState_Tech', TechTemplate);
+	}
+	if ( !IsResearchInHistory('BuildExpSpark') )
+	{
+	TechTemplate = X2TechTemplate(StratMgr.FindStrategyElementTemplate('BuildExpSpark'));
+	NewGameState.CreateNewStateObject(class'XComGameState_Tech', TechTemplate);
+	}
+	if ( !IsResearchInHistory('RebuildSpark') )
+	{
+	TechTemplate = X2TechTemplate(StratMgr.FindStrategyElementTemplate('RebuildSpark'));
+	NewGameState.CreateNewStateObject(class'XComGameState_Tech', TechTemplate);
+	}
+	if ( !IsResearchInHistory('ExpandRepairBay') )
+	{
+	TechTemplate = X2TechTemplate(StratMgr.FindStrategyElementTemplate('ExpandRepairBay'));
+	NewGameState.CreateNewStateObject(class'XComGameState_Tech', TechTemplate);
+	}
+
+	if( NewGameState.GetNumGameStateObjects() > 0 )
+	{
+		//Commit the state change into the history.
+		History.AddGameStateToHistory(NewGameState);
+	}
+	else
+	{
+		History.CleanupPendingGameState(NewGameState);
+	}
+}
+
+static function bool IsResearchInHistory(name ResearchName)
+{
+	// Check if we've already injected the tech templates
+	local XComGameState_Tech	TechState;
+	
+	foreach `XCOMHISTORY.IterateByClassType(class'XComGameState_Tech', TechState)
+	{
+		if ( TechState.GetMyTemplateName() == ResearchName )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+//================================================================================================================
+// STAFF SLOTS
+//================================================================================================================
+
+// Thanks to RealityMachina for figuring out how to add new repair slots
+static function PatchSparkSlots()
+{
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState_FacilityXCom FacilityState;
+	local X2FacilityTemplate FacilityTemplate;
+	local XComGameState_StaffSlot StaffSlotState, ExistingStaffSlot, LinkedStaffSlotState;
+	local X2StaffSlotTemplate StaffSlotTemplate;
+	local StaffSlotDefinition SlotDef;
+	local int i, j;
+	local bool bReplaceSlot, DidChange;
+	local X2StrategyElementTemplateManager StratMgr;
+	local array<int> SkipIndices;
+	local XComGameState NewGameState;
+
+	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Mechatronic Warfare -- Adding New Slots");
+
+	XComHQ = XComGameState_HeadquartersXCom(`XCOMHISTORY.GetSingleGameStateObjectForClass(class'XComGameState_HeadquartersXCom'));
+	StratMgr = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+	
+	FacilityState = XComHQ.GetFacilityByName('Storage');
+	if (FacilityState != none)
+	{
+		FacilityState = XComGameState_FacilityXCom(NewGameState.ModifyStateObject(class'XComGameState_FacilityXCom', FacilityState.ObjectID));
+		FacilityTemplate = FacilityState.GetMyTemplate();
+
+		for (i = 0; i < FacilityTemplate.StaffSlotDefs.Length; i++)
+		{
+			if(SkipIndices.Find(i) == INDEX_NONE)
+			{
+				SlotDef = FacilityTemplate.StaffSlotDefs[i];
+				// Check to see if the existing staff slot at this index no longer matches the template and needs to be replaced
+				bReplaceSlot = false;
+				if(i < FacilityState.StaffSlots.Length && FacilityState.StaffSlots[i].ObjectID != 0)
+				{
+					ExistingStaffSlot = FacilityState.GetStaffSlot(i);
+					if(ExistingStaffSlot.GetMyTemplateName() != SlotDef.StaffSlotTemplateName)
+					{
+						bReplaceSlot = true;
+					}
+				}
+				
+				if(i >= FacilityState.StaffSlots.Length || bReplaceSlot) // Only add a new staff slot if it doesn't already exist or needs to be replaced
+				{
+					StaffSlotTemplate = X2StaffSlotTemplate(StratMgr.FindStrategyElementTemplate(SlotDef.StaffSlotTemplateName));
+					DidChange = true;
+					
+					if(StaffSlotTemplate != none)
+					{
+						// Create slot state and link to this facility
+						StaffSlotState = StaffSlotTemplate.CreateInstanceFromTemplate(NewGameState);
+						StaffSlotState.Facility = FacilityState.GetReference();
+
+						// Check for starting the slot locked
+						if(SlotDef.bStartsLocked)
+						{
+							StaffSlotState.LockSlot();
+						}
+
+						if(bReplaceSlot)
+						{
+							FacilityState.StaffSlots[i] = StaffSlotState.GetReference();
+						}
+						else
+						{
+							FacilityState.StaffSlots.AddItem(StaffSlotState.GetReference());
+						}
+						
+						// Check rest of list for partner slot
+						if(SlotDef.LinkedStaffSlotTemplateName != '')
+						{
+							StaffSlotTemplate = X2StaffSlotTemplate(StratMgr.FindStrategyElementTemplate(SlotDef.LinkedStaffSlotTemplateName));
+
+							if(StaffSlotTemplate != none)
+							{
+								for(j = (i + 1); j < FacilityTemplate.StaffSlotDefs.Length; j++)
+								{
+									SlotDef = FacilityTemplate.StaffSlotDefs[j];
+
+									if(SkipIndices.Find(j) == INDEX_NONE && SlotDef.StaffSlotTemplateName == StaffSlotTemplate.DataName)
+									{
+										// Check to see if the existing staff slot at this index no longer matches the template and needs to be replaced
+										bReplaceSlot = false;
+										if(j < FacilityState.StaffSlots.Length && FacilityState.StaffSlots[j].ObjectID != 0)
+										{
+											ExistingStaffSlot = FacilityState.GetStaffSlot(j);
+											if(ExistingStaffSlot.GetMyTemplateName() != SlotDef.StaffSlotTemplateName)
+											{
+												bReplaceSlot = true;
+											}
+										}
+
+										if(j >= FacilityState.StaffSlots.Length || bReplaceSlot) // Only add a new staff slot if it doesn't already exist or needs to be replaced
+										{
+											// Create slot state and link to this facility
+											LinkedStaffSlotState = StaffSlotTemplate.CreateInstanceFromTemplate(NewGameState);
+											LinkedStaffSlotState.Facility = FacilityState.GetReference();
+
+											// Check for starting the slot locked
+											if(SlotDef.bStartsLocked)
+											{
+												LinkedStaffSlotState.LockSlot();
+											}
+
+											// Link the slots
+											StaffSlotState.LinkedStaffSlot = LinkedStaffSlotState.GetReference();
+											LinkedStaffSlotState.LinkedStaffSlot = StaffSlotState.GetReference();
+
+											if(bReplaceSlot)
+											{
+												FacilityState.StaffSlots[j] = LinkedStaffSlotState.GetReference();
+											}
+											else
+											{
+												FacilityState.StaffSlots.AddItem(LinkedStaffSlotState.GetReference());
+											}
+
+											// Add index to list to be skipped since we already added it
+											SkipIndices.AddItem(j);
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (NewGameState.GetNumGameStateObjects() > 0 && DidChange)
+	{
+		XComGameInfo(class'Engine'.static.GetCurrentWorldInfo().Game).GameRuleset.SubmitGameState(NewGameState);
+	}
+	else
+	{
+		`XCOMHistory.CleanupPendingGameState(NewGameState);
+	}
+
+}
+
+static function PatchRepairFacility()
+{
+	local X2FacilityTemplate FacilityTemplate;
+	local array<X2FacilityTemplate> FacilityTemplates;
+	local StaffSlotDefinition StaffSlotDef;
+
+	FindFacilityTemplateAllDifficulties('Storage', FacilityTemplates);
+	StaffSlotDef.StaffSlotTemplateName = 'SparkStaffSlot2';
+	StaffSlotDef.bStartsLocked = true;
+	foreach FacilityTemplates(FacilityTemplate)
+	{
+		FacilityTemplate.StaffSlotDefs.AddItem(StaffSlotDef);
+		`log("REPAIR FACILITY PATCHED");
+	}
+}
+
+//retrieves all difficulty variants of a given facility template
+static function FindFacilityTemplateAllDifficulties(name DataName, out array<X2FacilityTemplate> FacilityTemplates, optional X2StrategyElementTemplateManager StrategyTemplateMgr)
+{
+	local array<X2DataTemplate> DataTemplates;
+	local X2DataTemplate DataTemplate;
+	local X2FacilityTemplate FacilityTemplate;
+
+	if(StrategyTemplateMgr == none)
+		StrategyTemplateMgr = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+
+	StrategyTemplateMgr.FindDataTemplateAllDifficulties(DataName, DataTemplates);
+	FacilityTemplates.Length = 0;
+	foreach DataTemplates(DataTemplate)
+	{
+		FacilityTemplate = X2FacilityTemplate(DataTemplate);
+		if( FacilityTemplate != none )
+		{
+			FacilityTemplates.AddItem(FacilityTemplate);
+		}
+	}
+}
+
+static function PatchCreateSpark()
+{
+	local X2StrategyElementTemplateManager      AllItems;
+	local X2TechTemplate						CurrentSchematic;
+
+	// Find the schematic template
+	AllItems = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+	CurrentSchematic = X2TechTemplate(AllItems.FindStrategyElementTemplate('BuildSpark'));
+	
+	if ( CurrentSchematic != none )
+	{
+		CurrentSchematic.ResearchCompletedFn = class'X2StrategyElement_TechsMW'.static.CreateSparkTrooper;
+		`log("BUILD PROJECT PATCHED");
+	}
+}
+
+static function PatchMechWar()
+{
+	local X2StrategyElementTemplateManager      AllItems;
+	local X2TechTemplate						CurrentSchematic;
+
+	// Find the schematic template
+	AllItems = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+	CurrentSchematic = X2TechTemplate(AllItems.FindStrategyElementTemplate('MechanizedWarfare'));
+	
+	if ( CurrentSchematic != none )
+	{
+		CurrentSchematic.ResearchCompletedFn = class'X2StrategyElement_TechsMW'.static.CreateSparkTrooperAndEquipment;
+		`log("MECHWAR PROJECT PATCHED");
+	}
 }
