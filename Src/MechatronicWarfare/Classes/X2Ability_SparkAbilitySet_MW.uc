@@ -50,7 +50,6 @@ static function array<X2DataTemplate> CreateTemplates()
 	local array<X2DataTemplate> Templates;
 	
 	Templates.AddItem(RepairMW());
-	Templates.AddItem(LinkedBIT());
 	Templates.AddItem(RoboticChassis());
 	Templates.AddItem(Reboot());
 	Templates.AddItem(RebootTriggered());
@@ -200,31 +199,6 @@ static function X2AbilityTemplate RoboticChassis()
 	DamageImmunity.ImmuneTypes.AddItem('Unconscious');
 	DamageImmunity.ImmuneTypes.AddItem('Panic');
 	Template.AddTargetEffect(DamageImmunity);
-
-	Template.bSkipFireAction = true;
-	Template.bShowActivation = false;
-
-	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
-	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
-
-	return Template;
-}
-
-static function X2AbilityTemplate LinkedBIT()
-{
-	local X2AbilityTemplate						Template;
-
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'LinkedBIT');
-	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
-
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
-	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
-	Template.Hostility = eHostility_Neutral;
-	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_mechanicalchassis";
-
-	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
-	Template.AdditionalAbilities.AddItem('Arsenal');
-	Template.AdditionalAbilities.AddItem('IntrusionProtocol');
 
 	Template.bSkipFireAction = true;
 	Template.bShowActivation = false;
@@ -712,6 +686,7 @@ static function X2AbilityTemplate Neutralize()
 	local X2AbilityMultiTarget_Radius   RadiusMultiTarget;
 	local X2AbilityCooldown             Cooldown;
 	local X2Effect_DisableWeapon		DisableEffect;
+	local X2Effect_Persistent			DisorientedEffect;
 	local X2Effect_PerkAttachForFX      PerkEffect;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'Neutralize');
@@ -751,10 +726,14 @@ static function X2AbilityTemplate Neutralize()
 
 	Template.AbilityMultiTargetConditions.AddItem(default.LivingTargetOnlyProperty);
 	
-	// weapon disable
+	// target effects
 	DisableEffect = new class'X2Effect_DisableWeapon';
 	DisableEffect.ApplyChance = 100;
 	Template.AddMultiTargetEffect(DisableEffect);
+
+	DisorientedEffect = class'X2StatusEffects'.static.CreateDisorientedStatusEffect(true, , false);
+	DisorientedEffect.bRemoveWhenSourceDies = true;
+	Template.AddTargetEffect(DisorientedEffect);
 
 	Template.PostActivationEvents.AddItem('ItemRecalled');
 
@@ -1011,7 +990,7 @@ static function X2AbilityTemplate LightningStrike()
 	local X2Effect_Knockback				KnockbackEffect;
 	local X2AbilityMultiTarget_Radius		RadiusMultiTarget;
 
-	`CREATE_X2ABILITY_TEMPLATE(Template, 'LightningStrike');
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'LightningStrikeMW');
 	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
 
 	Template.AbilitySourceName = 'eAbilitySource_Perk';
@@ -1441,8 +1420,7 @@ static function X2AbilityTemplate Overclock()
 	Template.BuildVisualizationFn = OverclockAbility_BuildVisualization;
 	
 	Template.AdditionalAbilities.AddItem('OverclockPassive');
-	// removed because it invaded the Specialist's personal space
-	//Template.AdditionalAbilities.AddItem('HaywireProtocol');
+	Template.AdditionalAbilities.AddItem('HaywireProtocol');
 
 	return Template;
 }

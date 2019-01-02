@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Default" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Guid>40023853-b6b1-4c83-89ef-e7464b69fbd1</Guid>
+    <Guid>ea2d6c8b-d9c2-490f-b45e-fa08280e33f5</Guid>
     <Name>Mechatronic Warfare</Name>
-    <Description>A complete overhaul and rebalancing of everything related to SPARKs.</Description>
+    <Description>If you are reading this, I'm in the middle of updating the mod. For some reason, whenever I update the mod Steam replaces my existing description with whatever's in the mod's readme file. Refresh the page in a few minutes and it should be back to normal.</Description>
     <SteamPublishID>0</SteamPublishID>
     <AssemblyName>MechatronicWarfare</AssemblyName>
     <RootNamespace>MechatronicWarfare</RootNamespace>
@@ -45,7 +45,22 @@
     <Content Include="Content\UILibrary_MW.upk">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="Localization\MechatronicWarfare.fra">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Localization\MechatronicWarfare.int">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Localization\MechatronicWarfare.kor">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Localization\XComGame.chn">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Localization\XComGame.fra">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Localization\XComGame.kor">
       <SubType>Content</SubType>
     </Content>
     <Content Include="ReadMe.txt" />
@@ -93,9 +108,6 @@
     <Content Include="Src\MechatronicWarfare\Classes\X2AbilityCost_SparkRefund.uc">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="Src\MechatronicWarfare\Classes\X2Effect_Triangulation.uc">
-      <SubType>Content</SubType>
-    </Content>
     <Content Include="Src\MechatronicWarfare\Classes\X2Item_SPARKCorpse.uc">
       <SubType>Content</SubType>
     </Content>
@@ -109,6 +121,9 @@
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\MechatronicWarfare\Classes\X2TargetingMethod_Collateral.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\MechatronicWarfare\Classes\XcomGameState_TacticalCleanup_MW.uc">
       <SubType>Content</SubType>
     </Content>
   </ItemGroup>

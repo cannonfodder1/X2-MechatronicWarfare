@@ -20,6 +20,7 @@ static function X2DataTemplate CreateSPARKCorpse()
 	Template.TradingPostValue = 10;
 	Template.MaxQuantity = 1;
 	Template.LeavesExplosiveRemains = true;
+	Template.bAlwaysRecovered = true;
 
 	return Template;
 }

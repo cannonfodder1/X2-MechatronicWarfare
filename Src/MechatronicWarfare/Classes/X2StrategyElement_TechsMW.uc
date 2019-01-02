@@ -2,6 +2,17 @@ class X2StrategyElement_TechsMW extends X2StrategyElement config(StrategyTuning)
 
 var config int EXPERIENCED_SPARK_LEVEL;
 
+var config int EXP_SPARK_CORES;
+var config int EXP_SPARK_SUPPLIES;
+var config int EXP_SPARK_ALLOYS;
+var config int EXP_SPARK_ELERIUM;
+
+var config int REBUILD_SPARK_SUPPLIES;
+
+var config int REPAIRBAY_SUPPLIES;
+var config int REPAIRBAY_ALLOYS;
+var config int REPAIRBAY_ELERIUM;
+
 static function array<X2DataTemplate> CreateTemplates()
 {
 	local array<X2DataTemplate> Techs;
@@ -45,19 +56,19 @@ static function X2DataTemplate CreateBuildCaptainSparkTemplate()
 	
 	// Cost
 	Resources.ItemTemplateName = 'Supplies';
-	Resources.Quantity = 75;
+	Resources.Quantity = default.EXP_SPARK_SUPPLIES; //75
 	Template.Cost.ResourceCosts.AddItem(Resources);
 	
 	Resources.ItemTemplateName = 'AlienAlloy';
-	Resources.Quantity = 30;
+	Resources.Quantity = default.EXP_SPARK_ALLOYS; //30
 	Template.Cost.ResourceCosts.AddItem(Resources);
 	
 	Resources.ItemTemplateName = 'EleriumDust';
-	Resources.Quantity = 10;
+	Resources.Quantity = default.EXP_SPARK_ELERIUM; //15
 	Template.Cost.ResourceCosts.AddItem(Resources);
 	
 	Artifacts.ItemTemplateName = 'EleriumCore';
-	Artifacts.Quantity = 1;
+	Artifacts.Quantity = default.EXP_SPARK_CORES; //1
 	Template.Cost.ArtifactCosts.AddItem(Artifacts);
 
 	return Template;
@@ -73,7 +84,7 @@ static function CreateCaptainSparkSoldier(XComGameState NewGameState, optional X
 	local XComGameState_Unit NewSparkState;
 	local int NewRank, idx;
 
-	CreateSparkTrooper(NewGameState, SparkCreatorTech);
+	CreateCaptainSparkTrooper(NewGameState, SparkCreatorTech);
 
 	History = `XCOMHISTORY;
 
@@ -147,7 +158,7 @@ static function X2DataTemplate CreateRebuildSPARKTemplate()
 	Template.Cost.ResourceCosts.AddItem(Resources);
 
 	Resources.ItemTemplateName = 'Supplies';
-	Resources.Quantity = 50;
+	Resources.Quantity = default.REBUILD_SPARK_SUPPLIES; //50
 	Template.Cost.ResourceCosts.AddItem(Resources);
 
 
@@ -245,7 +256,8 @@ function RemakeSparkSoldier(XComGameState NewGameState, optional StateObjectRefe
 		NewSparkState.SetCharacterName(CopiedSparkState.GetFirstName(), CopiedSparkState.GetLastName(), CopiedSparkState.GetNickName());
 		NewSparkState.SetCountry(CopiedSparkState.GetCountry());
 
-	//	NewSparkState.AddXp(CopiedSparkState.GetXPValue() - NewSparkState.GetXPValue());
+		NewSparkState.AddXp(CopiedSparkState.GetXPValue() - NewSparkState.GetXPValue());
+
 		NewSparkState.CopyKills(CopiedSparkState);
 		NewSparkState.CopyKillAssists(CopiedSparkState);
 		NewSparkState.RandomizeStats();
@@ -305,15 +317,15 @@ static function X2DataTemplate CreateExpandRepairBayTemplate()
 	
 	// Cost
 	Resources.ItemTemplateName = 'Supplies';
-	Resources.Quantity = 25;
+	Resources.Quantity = default.REPAIRBAY_SUPPLIES; //25
 	Template.Cost.ResourceCosts.AddItem(Resources);
 	
 	Resources.ItemTemplateName = 'AlienAlloy';
-	Resources.Quantity = 15;
+	Resources.Quantity = default.REPAIRBAY_ALLOYS; //15
 	Template.Cost.ResourceCosts.AddItem(Resources);
 	
 	Resources.ItemTemplateName = 'EleriumDust';
-	Resources.Quantity = 5;
+	Resources.Quantity = default.REPAIRBAY_ELERIUM; //5
 	Template.Cost.ResourceCosts.AddItem(Resources);
 
 	return Template;
@@ -336,7 +348,7 @@ static function UnlockSecondRepairSlot(XComGameState NewGameState, XComGameState
         {
             StaffSlotState = XComGameState_StaffSlot(NewGameState.ModifyStateObject(class'XComGameState_StaffSlot', Facility.StaffSlots[i].ObjectID));
             StaffSlotState.UnlockSlot();
-			`log("SECOND SLOT UNLOCKED");
+			//`log("SECOND SLOT UNLOCKED");
             return;
         }
     }
@@ -359,7 +371,7 @@ static function UnlockFirstRepairSlot(XComGameState NewGameState, XComGameState_
         {
             StaffSlotState = XComGameState_StaffSlot(NewGameState.ModifyStateObject(class'XComGameState_StaffSlot', Facility.StaffSlots[i].ObjectID));
             StaffSlotState.UnlockSlot();
-			`log("FIRST SLOT UNLOCKED");
+			//`log("FIRST SLOT UNLOCKED");
             return;
         }
     }
@@ -387,6 +399,24 @@ static function CreateSparkTrooper(XComGameState NewGameState, XComGameState_Tec
 	}
 
 	class'X2Helpers_DLC_Day90'.static.CreateSparkSoldier(NewGameState, , TechState);
+
+	UnlockFirstRepairSlot(NewGameState, TechState);
+}
+
+static function CreateCaptainSparkTrooper(XComGameState NewGameState, XComGameState_Tech TechState)
+{
+	local XComGameState_CampaignSettings CampaignSettings;
+	local XComGameState_HeadquartersXCom XComHQ;
+
+	XComHQ = class'UIUtilities_Strategy'.static.GetXComHQ();
+
+	CampaignSettings = XComGameState_CampaignSettings(`XCOMHISTORY.GetSingleGameStateObjectForClass(class'XComGameState_CampaignSettings'));
+
+	if (CampaignSettings.HasIntegratedDLCEnabled() && XComHQ.IsTechResearched('BuildSpark') || XComHQ.IsTechResearched('BuildExpSpark'))
+	{
+		// The first time a Spark is built in DLC Integrated XPack games, create the necessary Spark gear for XComHQ
+		class'X2Helpers_DLC_Day90'.static.CreateSparkEquipment(NewGameState);
+	}
 
 	UnlockFirstRepairSlot(NewGameState, TechState);
 }

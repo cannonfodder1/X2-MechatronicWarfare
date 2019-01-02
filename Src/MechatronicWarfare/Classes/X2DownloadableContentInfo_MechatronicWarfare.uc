@@ -1,6 +1,13 @@
 class X2DownloadableContentInfo_MechatronicWarfare extends X2DownloadableContentInfo dependson(X2Character) config(UpdateSpark);
 
+var config bool SPARK_OVERRIDE_INVENTORY;
 var config bool SPARK_CANNON_BREAKTHROUGH;
+var config bool SPARK_OVERHAUL_ARMOR;
+var config bool SPARK_OVERHAUL_WEAPON;
+var config bool SPARK_OVERHAUL_BIT;
+
+var array<string> SparkNames;
+var array<string> ItemNames;
 
 `define GETTECH(TECHNAME) X2TechTemplate(ElementManager.FindStrategyElementTemplate('`TECHNAME'))
 `define IFGETTECH(TECHNAME) CannonTech=`GETTECH(`TECHNAME); if (CannonTech!=None)
@@ -17,35 +24,51 @@ static event OnLoadedSavedGameToStrategy()
 	PatchBondmates();
 	PatchSparkBonding();
 
+	if (default.SPARK_OVERRIDE_INVENTORY)
+	{
+		UpdateSPARKInventory();
+	}
+
 	OnExitPostMissionSequence();
 }
 
 static event OnPostTemplatesCreated()
 {
-	PatchSparkItemT2Arm();
-	PatchSparkItemT2Wep();
-	PatchSparkItemT2Bit();
-	PatchSparkItemT3Arm();
-	PatchSparkItemT3Wep();
-	PatchSparkItemT3Bit();
-
-	PatchSparkBuildT2Arm();
-	PatchSparkBuildT2Wep();
-	PatchSparkBuildT2Bit();
-	PatchSparkBuildT3Arm();
-	PatchSparkBuildT3Wep();
-	PatchSparkBuildT3Bit();
+	if (default.SPARK_OVERHAUL_ARMOR == true)
+	{
+		PatchSparkItemT2Arm();
+		PatchSparkItemT3Arm();
+		PatchSparkBuildT2Arm();
+		PatchSparkBuildT3Arm();
+		PatchSquadBuildT3Arm();
+		PatchSquadBuildT2Arm();
+	}
 	
-	PatchSquadBuildT2Arm();
-	PatchSquadBuildT2Wep();
-	PatchSquadBuildT2Grem();
-	PatchSquadBuildT3Arm();
-	PatchSquadBuildT3Wep();
-	PatchSquadBuildT3Grem();
+	if (default.SPARK_OVERHAUL_WEAPON == true)
+	{
+		PatchSparkItemT2Wep();
+		PatchSparkItemT3Wep();
+		PatchSparkBuildT2Wep();
+		PatchSparkBuildT3Wep();
+		PatchSquadBuildT2Wep();
+		PatchSquadBuildT3Wep();
+	}
+	
+	if (default.SPARK_OVERHAUL_BIT == true)
+	{
+		PatchSparkItemT2Bit();
+		PatchSparkItemT3Bit();
+		PatchSparkBuildT3Bit();
+		PatchSparkBuildT2Bit();
+		PatchSquadBuildT3Grem();
+		PatchSquadBuildT2Grem();
+	}
 
 	PatchRepairFacility();
 	PatchCreateSpark();
 	PatchMechWar();
+	PatchSparkCharacter();
+	//PatchSparkLaunchers();
 }
 
 //================================================================================================================
@@ -63,7 +86,7 @@ static function PatchSparkItemT2Arm()
 	
 	// Change the schematic that creates this item from the Reinforced Frame schematic to the Predator Armor schematic
 	Template.CreatorTemplateName = 'MediumPlatedArmor_Schematic';
-	`log("Spark T2 Armour Patched");
+	//`log("Spark T2 Armour Patched");
 }
 
 static function PatchSparkItemT2Wep()
@@ -77,7 +100,7 @@ static function PatchSparkItemT2Wep()
 
 	// Change the schematic that creates this item from the Helix Autocannon schematic to the Mag Cannon schematic
 	Template.CreatorTemplateName = 'Cannon_MG_Schematic';
-	`log("Spark T2 Weapon Patched");
+	//`log("Spark T2 Weapon Patched");
 }
 
 static function PatchSparkItemT2Bit()
@@ -91,7 +114,7 @@ static function PatchSparkItemT2Bit()
 
 	// Change the schematic that creates this item from the Reinforced Frame schematic to the Gremlin MK2 schematic
 	Template.CreatorTemplateName = 'Gremlin_MG_Schematic';
-	`log("Spark T2 BIT Patched");
+	//`log("Spark T2 BIT Patched");
 }
 
 static function PatchSparkItemT3Arm()
@@ -105,7 +128,7 @@ static function PatchSparkItemT3Arm()
 	
 	// Change the schematic that creates this item from the Anodized Chassis schematic to the Warden Armor schematic
 	Template.CreatorTemplateName = 'MediumPoweredArmor_Schematic';
-	`log("Spark T3 Armour Patched");
+	//`log("Spark T3 Armour Patched");
 }
 
 static function PatchSparkItemT3Wep()
@@ -119,7 +142,7 @@ static function PatchSparkItemT3Wep()
 	
 	// Change the schematic that creates this item from the Elerium Phase-Cannon schematic to the Beam Cannon schematic
 	Template.CreatorTemplateName = 'Cannon_BM_Schematic';
-	`log("Spark T3 Weapon Patched");
+	//`log("Spark T3 Weapon Patched");
 }
 
 static function PatchSparkItemT3Bit()
@@ -133,7 +156,7 @@ static function PatchSparkItemT3Bit()
 	
 	// Change the schematic that creates this item from the Anodized Chassis schematic to the Gremlin MK3 schematic
 	Template.CreatorTemplateName = 'Gremlin_BM_Schematic';
-	`log("Spark T3 BIT Patched");
+	//`log("Spark T3 BIT Patched");
 }
 
 //================================================================================================================
@@ -177,7 +200,7 @@ static function PatchSparkBuildT2Arm()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk2";
 		}
 	}
-	`log("Spark T2 Armour Schematic Patched");
+	//`log("Spark T2 Armour Schematic Patched");
 }
 
 static function PatchSparkBuildT2Wep()
@@ -217,7 +240,7 @@ static function PatchSparkBuildT2Wep()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk2";
 		}
 	}
-	`log("Spark T2 Weapon Schematic Patched");
+	//`log("Spark T2 Weapon Schematic Patched");
 }
 
 static function PatchSparkBuildT2Bit()
@@ -257,7 +280,7 @@ static function PatchSparkBuildT2Bit()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk2";
 		}
 	}
-	`log("Spark T2 BIT Schematic Patched");
+	//`log("Spark T2 BIT Schematic Patched");
 }
 
 static function PatchSparkBuildT3Arm()
@@ -297,7 +320,7 @@ static function PatchSparkBuildT3Arm()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk3";
 		}
 	}
-	`log("Spark T3 Armour Schematic Patched");
+	//`log("Spark T3 Armour Schematic Patched");
 }
 
 static function PatchSparkBuildT3Wep()
@@ -337,7 +360,7 @@ static function PatchSparkBuildT3Wep()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk3";
 		}
 	}
-	`log("Spark T3 Weapon Schematic Patched");
+	//`log("Spark T3 Weapon Schematic Patched");
 }
 
 static function PatchSparkBuildT3Bit()
@@ -377,7 +400,7 @@ static function PatchSparkBuildT3Bit()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk3";
 		}
 	}
-	`log("Spark T3 BIT Schematic Patched");
+	//`log("Spark T3 BIT Schematic Patched");
 }
 
 static function X2TechTemplate CreateFakeTechTemplate()
@@ -424,7 +447,7 @@ static function PatchSquadBuildT2Arm()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk2";
 		}
 	}
-	`log("Squad T2 Armour Schematic Patched");
+	//`log("Squad T2 Armour Schematic Patched");
 }
 
 static function PatchSquadBuildT2Wep()
@@ -450,7 +473,7 @@ static function PatchSquadBuildT2Wep()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk2";
 		}
 	}
-	`log("Squad T2 Cannon Schematic Patched");
+	//`log("Squad T2 Cannon Schematic Patched");
 }
 
 static function PatchSquadBuildT2Grem()
@@ -476,7 +499,7 @@ static function PatchSquadBuildT2Grem()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk2";
 		}
 	}
-	`log("Squad T2 Gremlin Schematic Patched");
+	//`log("Squad T2 Gremlin Schematic Patched");
 }
 
 static function PatchSquadBuildT3Arm()
@@ -502,7 +525,7 @@ static function PatchSquadBuildT3Arm()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk3";
 		}
 	}
-	`log("Squad T3 Armour Schematic Patched");
+	//`log("Squad T3 Armour Schematic Patched");
 }
 
 static function PatchSquadBuildT3Wep()
@@ -528,7 +551,7 @@ static function PatchSquadBuildT3Wep()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk3";
 		}
 	}
-	`log("Squad T3 Cannon Schematic Patched");
+	//`log("Squad T3 Cannon Schematic Patched");
 }
 
 static function PatchSquadBuildT3Grem()
@@ -554,7 +577,7 @@ static function PatchSquadBuildT3Grem()
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk3";
 		}
 	}
-	`log("Squad T3 Gremlin Schematic Patched");
+	//`log("Squad T3 Gremlin Schematic Patched");
 }
 
 //================================================================================================================
@@ -749,6 +772,8 @@ static function PatchSparkBonding()
 	CharTemplate = CharacterTemplateMgr.FindCharacterTemplate('SparkSoldier');
 
 	// Add SPARK bondmate abilities
+	//CharTemplate.Abilities.AddItem('BondmateTheFirstLaw');
+	//CharTemplate.Abilities.AddItem('BondmateFirstLawPassive');
 	CharTemplate.Abilities.AddItem('BondmateSolaceCleanse');
 	CharTemplate.Abilities.AddItem('BondmateSolacePassive');
 	CharTemplate.Abilities.AddItem('BondmateTeamwork_Spark');
@@ -983,7 +1008,7 @@ static function PatchRepairFacility()
 	foreach FacilityTemplates(FacilityTemplate)
 	{
 		FacilityTemplate.StaffSlotDefs.AddItem(StaffSlotDef);
-		`log("REPAIR FACILITY PATCHED");
+		//`log("REPAIR FACILITY PATCHED");
 	}
 }
 
@@ -1021,7 +1046,7 @@ static function PatchCreateSpark()
 	if ( CurrentSchematic != none )
 	{
 		CurrentSchematic.ResearchCompletedFn = class'X2StrategyElement_TechsMW'.static.CreateSparkTrooper;
-		`log("BUILD PROJECT PATCHED");
+		//`log("BUILD PROJECT PATCHED");
 	}
 }
 
@@ -1037,6 +1062,153 @@ static function PatchMechWar()
 	if ( CurrentSchematic != none )
 	{
 		CurrentSchematic.ResearchCompletedFn = class'X2StrategyElement_TechsMW'.static.CreateSparkTrooperAndEquipment;
-		`log("MECHWAR PROJECT PATCHED");
+		//`log("MECHWAR PROJECT PATCHED");
 	}
+}
+
+static function PatchSparkCharacter()
+{
+	local X2CharacterTemplateManager	CharManager;
+	local X2CharacterTemplate			CharTemplate;
+	local LootReference Loot;
+	local array<X2DataTemplate>		DifficultyTemplates;
+	local X2DataTemplate			DifficultyTemplate;
+
+	CharManager = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
+
+	CharManager.FindDataTemplateAllDifficulties('SparkSoldier',DifficultyTemplates);
+	
+	foreach DifficultyTemplates(DifficultyTemplate) 
+	{
+		CharTemplate = X2CharacterTemplate(DifficultyTemplate);
+		if ( CharTemplate != none ) 
+		{
+			//`log("Patching SPARK loot!");
+			Loot.ForceLevel=0;
+			Loot.LootTableName='SPARK_BaseLoot';
+			CharTemplate.Loot.LootReferences.AddItem(Loot);
+		}
+	}
+	
+	CharManager.FindDataTemplateAllDifficulties('LostTowersSpark',DifficultyTemplates);
+	
+	foreach DifficultyTemplates(DifficultyTemplate) 
+	{
+		CharTemplate = X2CharacterTemplate(DifficultyTemplate);
+		if ( CharTemplate != none ) 
+		{
+			//`log("Patching SPARK loot!");
+			Loot.ForceLevel=0;
+			Loot.LootTableName='SPARK_BaseLoot';
+			CharTemplate.Loot.LootReferences.AddItem(Loot);
+		}
+	}
+}
+
+static event OnPreMission(XComGameState NewGameState, XComGameState_MissionSite MissionState)
+{
+	local XComGameState_TacticalCleanup_MW EndMissionListener;
+
+	LogInternal("Mechatronic Warfare :: Ensuring presence of tactical game state listeners");
+	
+	EndMissionListener = XComGameState_TacticalCleanup_MW(class'XComGameStateHistory'.static.GetGameStateHistory().GetSingleGameStateObjectForClass(class'XComGameState_TacticalCleanup_MW', true));
+
+	if (EndMissionListener == none)
+	{
+		EndMissionListener = XComGameState_TacticalCleanup_MW(NewGameState.CreateStateObject(class'XComGameState_TacticalCleanup_MW'));
+		NewGameState.AddStateObject(EndMissionListener);
+	}
+
+	EndMissionListener.RegisterToListen();
+}
+
+// Function called whenever the player loads a game, also doubling as a console command
+static exec function UpdateSPARKInventory()
+{
+	local XComGameState NewGameState;
+	local XComGameStateHistory History;
+	local XComGameState_HeadquartersXCom XComHQ;
+	local X2ItemTemplateManager ItemTemplateMgr;
+	local X2ItemTemplate ItemTemplate;
+	local XComGameState_Item NewItemState, InvItemState;
+	local array<StateObjectReference> InventoryItemRefs;
+	local bool HasItem, ShouldOverhaul;
+	local int i, idx;
+
+	History = `XCOMHISTORY;
+	ItemTemplateMgr = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
+
+	for (i=0; i < default.SparkNames.length; i++)
+	{
+		ShouldOverhaul = true;
+
+		if (i == 0 || i == 1)
+		{
+			if (default.SPARK_OVERHAUL_WEAPON == false)
+			{
+				ShouldOverhaul = false;
+			}
+		}
+		if (i == 2 || i == 3)
+		{
+			if (default.SPARK_OVERHAUL_ARMOR == false)
+			{
+				ShouldOverhaul = false;
+			}
+		}
+		if (i == 4 || i == 5)
+		{
+			if (default.SPARK_OVERHAUL_BIT == false)
+			{
+				ShouldOverhaul = false;
+			}
+		}
+
+		if (ShouldOverhaul)
+		{
+				
+			NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Updating HQ Storage to add SPARK items");
+			XComHQ = XComGameState_HeadquartersXCom(History.GetSingleGameStateObjectForClass(class'XComGameState_HeadquartersXCom'));
+			XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', XComHQ.ObjectID));
+			NewGameState.AddStateObject(XComHQ);
+
+			ItemTemplate = ItemTemplateMgr.FindItemTemplate(name(default.ItemNames[i]));
+			if (XComHQ.HasItem(ItemTemplate))
+			{
+				ItemTemplate = ItemTemplateMgr.FindItemTemplate(name(default.SparkNames[i]));
+				if (ItemTemplate != none)
+				{
+					if (!XComHQ.HasItem(ItemTemplate))
+					{
+						`LOG("Updating armory with: " $ default.SparkNames[i]);
+						NewItemState = ItemTemplate.CreateInstanceFromTemplate(NewGameState);
+						NewGameState.AddStateObject(NewItemState);
+						XComHQ.AddItemToHQInventory(NewItemState);
+						History.AddGameStateToHistory(NewGameState);
+					}
+				}
+			}
+			History.CleanupPendingGameState(NewGameState);
+		}
+		else
+		{
+			`LOG("Schematic integration for: " $ default.SparkNames[i] $ " is disabled!");
+		}
+	}
+}
+
+defaultproperties
+{
+	SparkNames[0] = "SparkRifle_MG"
+	SparkNames[1] = "SparkRifle_BM"
+	SparkNames[2] = "PlatedSparkArmor"
+	SparkNames[3] = "PoweredSparkArmor"
+	SparkNames[4] = "SparkBit_MG"
+	SparkNames[5] = "SparkBit_BM"
+	ItemNames[0] = "Cannon_MG"
+	ItemNames[1] = "Cannon_BM"
+	ItemNames[2] = "MediumPlatedArmor"
+	ItemNames[3] = "MediumPoweredArmor"
+	ItemNames[4] = "Gremlin_MG"
+	ItemNames[5] = "Gremlin_BM"
 }

@@ -15,8 +15,6 @@ function WeaponDamageValue GetBonusEffectDamageValue(XComGameState_Ability Abili
 
 	DamageValue.Damage = DamageValue.Damage / 2;
 
-	`log(EnvironmentalDamageAmount);
-
 	//  if under the effect of Obliterator, halve the damage from that
 	if (SourceUnit.IsUnitAffectedByEffectName('Obliterator'))
 	{
