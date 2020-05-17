@@ -21,8 +21,6 @@ static event OnLoadedSavedGameToStrategy()
 	PatchSparkTechs();
 	PatchSparkSlots();
 	PatchBreakthrough();
-	PatchBondmates();
-	PatchSparkBonding();
 
 	if (default.SPARK_OVERRIDE_INVENTORY)
 	{
@@ -34,8 +32,11 @@ static event OnLoadedSavedGameToStrategy()
 
 static event OnPostTemplatesCreated()
 {
+	`Log("Beginning Mechatronic Warfare Patches!");
+
 	if (default.SPARK_OVERHAUL_ARMOR == true)
 	{
+		`Log("Patching Chassis!");
 		PatchSparkItemT2Arm();
 		PatchSparkItemT3Arm();
 		PatchSparkBuildT2Arm();
@@ -46,6 +47,7 @@ static event OnPostTemplatesCreated()
 	
 	if (default.SPARK_OVERHAUL_WEAPON == true)
 	{
+		`Log("Patching Autocannon!");
 		PatchSparkItemT2Wep();
 		PatchSparkItemT3Wep();
 		PatchSparkBuildT2Wep();
@@ -56,6 +58,7 @@ static event OnPostTemplatesCreated()
 	
 	if (default.SPARK_OVERHAUL_BIT == true)
 	{
+		`Log("Patching Drone!");
 		PatchSparkItemT2Bit();
 		PatchSparkItemT3Bit();
 		PatchSparkBuildT3Bit();
@@ -68,7 +71,8 @@ static event OnPostTemplatesCreated()
 	PatchCreateSpark();
 	PatchMechWar();
 	PatchSparkCharacter();
-	//PatchSparkLaunchers();
+	PatchBondmates();
+	PatchSparkBonding();
 }
 
 //================================================================================================================
@@ -77,86 +81,146 @@ static event OnPostTemplatesCreated()
 
 static function PatchSparkItemT2Arm()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('PlatedSparkArmor');
+	TemplateManager.FindDataTemplateAllDifficulties('PlatedSparkArmor', DifficultyTemplates);
 	
 	// Change the schematic that creates this item from the Reinforced Frame schematic to the Predator Armor schematic
-	Template.CreatorTemplateName = 'MediumPlatedArmor_Schematic';
-	//`log("Spark T2 Armour Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'MediumPlatedArmor_Schematic';
+		}
+	}
+
+	//`Log("Spark T2 Armour Patched");
 }
 
 static function PatchSparkItemT2Wep()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('SparkRifle_MG');
-
+	TemplateManager.FindDataTemplateAllDifficulties('SparkRifle_MG', DifficultyTemplates);
+	
 	// Change the schematic that creates this item from the Helix Autocannon schematic to the Mag Cannon schematic
-	Template.CreatorTemplateName = 'Cannon_MG_Schematic';
-	//`log("Spark T2 Weapon Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'Cannon_MG_Schematic';
+		}
+	}
+
+	//`Log("Spark T2 Weapon Patched");
 }
 
 static function PatchSparkItemT2Bit()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('SparkBit_MG');
-
+	TemplateManager.FindDataTemplateAllDifficulties('SparkBit_MG', DifficultyTemplates);
+	
 	// Change the schematic that creates this item from the Reinforced Frame schematic to the Gremlin MK2 schematic
-	Template.CreatorTemplateName = 'Gremlin_MG_Schematic';
-	//`log("Spark T2 BIT Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'Gremlin_MG_Schematic';
+		}
+	}
+
+	//`Log("Spark T2 BIT Patched");
 }
 
 static function PatchSparkItemT3Arm()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('PoweredSparkArmor');
+	TemplateManager.FindDataTemplateAllDifficulties('PoweredSparkArmor', DifficultyTemplates);
 	
 	// Change the schematic that creates this item from the Anodized Chassis schematic to the Warden Armor schematic
-	Template.CreatorTemplateName = 'MediumPoweredArmor_Schematic';
-	//`log("Spark T3 Armour Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'MediumPoweredArmor_Schematic';
+		}
+	}
+
+	//`Log("Spark T3 Armour Patched");
 }
 
 static function PatchSparkItemT3Wep()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('SparkRifle_BM');
+	TemplateManager.FindDataTemplateAllDifficulties('SparkRifle_BM', DifficultyTemplates);
 	
 	// Change the schematic that creates this item from the Elerium Phase-Cannon schematic to the Beam Cannon schematic
-	Template.CreatorTemplateName = 'Cannon_BM_Schematic';
-	//`log("Spark T3 Weapon Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'Cannon_BM_Schematic';
+		}
+	}
+
+	//`Log("Spark T3 Weapon Patched");
 }
 
 static function PatchSparkItemT3Bit()
 {
+	local X2DataTemplate				DifficultyTemplate;
+	local array<X2DataTemplate>			DifficultyTemplates;
 	local X2ItemTemplateManager			TemplateManager;
-	local X2ItemTemplate				Template;
-
+	local X2ItemTemplate				ItemTemplate;
+	
 	// Find the item template
 	TemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	Template = TemplateManager.FindItemTemplate('SparkBit_BM');
+	TemplateManager.FindDataTemplateAllDifficulties('SparkBit_BM', DifficultyTemplates);
 	
 	// Change the schematic that creates this item from the Anodized Chassis schematic to the Gremlin MK3 schematic
-	Template.CreatorTemplateName = 'Gremlin_BM_Schematic';
-	//`log("Spark T3 BIT Patched");
+	foreach DifficultyTemplates(DifficultyTemplate)
+	{
+		ItemTemplate = X2ItemTemplate(DifficultyTemplate);
+		if (ItemTemplate != none)
+		{
+			ItemTemplate.CreatorTemplateName = 'Gremlin_BM_Schematic';
+		}
+	}
+
+	//`Log("Spark T3 BIT Patched");
 }
 
 //================================================================================================================
@@ -180,7 +244,6 @@ static function PatchSparkBuildT2Arm()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('PlatedSparkArmor_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('PlatedSparkArmor_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -189,18 +252,16 @@ static function PatchSparkBuildT2Arm()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk2";
 		}
 	}
-	//`log("Spark T2 Armour Schematic Patched");
+	//`Log("Spark T2 Armour Schematic Patched");
 }
 
 static function PatchSparkBuildT2Wep()
@@ -220,7 +281,6 @@ static function PatchSparkBuildT2Wep()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('SparkRifle_MG_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('SparkRifle_MG_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -229,18 +289,16 @@ static function PatchSparkBuildT2Wep()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk2";
 		}
 	}
-	//`log("Spark T2 Weapon Schematic Patched");
+	//`Log("Spark T2 Weapon Schematic Patched");
 }
 
 static function PatchSparkBuildT2Bit()
@@ -260,7 +318,6 @@ static function PatchSparkBuildT2Bit()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('SparkBit_MG_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('SparkBit_MG_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -269,18 +326,16 @@ static function PatchSparkBuildT2Bit()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk2";
 		}
 	}
-	//`log("Spark T2 BIT Schematic Patched");
+	//`Log("Spark T2 BIT Schematic Patched");
 }
 
 static function PatchSparkBuildT3Arm()
@@ -300,7 +355,6 @@ static function PatchSparkBuildT3Arm()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('PoweredSparkArmor_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('PoweredSparkArmor_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -309,18 +363,16 @@ static function PatchSparkBuildT3Arm()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk3";
 		}
 	}
-	//`log("Spark T3 Armour Schematic Patched");
+	//`Log("Spark T3 Armour Schematic Patched");
 }
 
 static function PatchSparkBuildT3Wep()
@@ -340,7 +392,6 @@ static function PatchSparkBuildT3Wep()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('SparkRifle_BM_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('SparkRifle_BM_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -349,18 +400,16 @@ static function PatchSparkBuildT3Wep()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk3";
 		}
 	}
-	//`log("Spark T3 Weapon Schematic Patched");
+	//`Log("Spark T3 Weapon Schematic Patched");
 }
 
 static function PatchSparkBuildT3Bit()
@@ -380,7 +429,6 @@ static function PatchSparkBuildT3Bit()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('SparkBit_BM_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('SparkBit_BM_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's requirement tech to a nonexistent tech, effectively disabling this schematic
@@ -389,18 +437,16 @@ static function PatchSparkBuildT3Bit()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
+			//`Log(CurrentSchematic.DataName $ " patched!");
             CurrentSchematic.Requirements.RequiredTechs.Length = 0;
             CurrentSchematic.Requirements.RequiredTechs.AddItem('NonExistent');
 
 			CurrentSchematic.AlternateRequirements.Length = 0;
 			AltReq.RequiredTechs.AddItem('NonExistent');
 			CurrentSchematic.AlternateRequirements.AddItem(AltReq);
-
-			CurrentSchematic.strImage = "";
-			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk3";
 		}
 	}
-	//`log("Spark T3 BIT Schematic Patched");
+	//`Log("Spark T3 BIT Schematic Patched");
 }
 
 static function X2TechTemplate CreateFakeTechTemplate()
@@ -412,7 +458,7 @@ static function X2TechTemplate CreateFakeTechTemplate()
 	Template.SortingTier = 0;
 
 	// Make Adv. Mag Weapons the requirement for this tech to show up
-	// Make the prerequisite for Adv. Mag Weapons be the tech that will hide this tech from the menu
+	// Make the tech that will hide this tech from the menu be the prerequisite for Adv. Mag Weapons
 	// I love making Catch-22s
 	Template.Requirements.RequiredTechs.AddItem('GaussWeapons');
 	Template.UnavailableIfResearched = 'MagnetizedWeapons';
@@ -434,7 +480,6 @@ static function PatchSquadBuildT2Arm()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('MediumPlatedArmor_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('MediumPlatedArmor_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's image in Engineering to this mod's custom images
@@ -443,11 +488,11 @@ static function PatchSquadBuildT2Arm()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk2";
 		}
 	}
-	//`log("Squad T2 Armour Schematic Patched");
+	//`Log("Squad T2 Armour Schematic Patched");
 }
 
 static function PatchSquadBuildT2Wep()
@@ -460,7 +505,6 @@ static function PatchSquadBuildT2Wep()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('Cannon_MG_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('Cannon_MG_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's image in Engineering to this mod's custom images
@@ -469,11 +513,11 @@ static function PatchSquadBuildT2Wep()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk2";
 		}
 	}
-	//`log("Squad T2 Cannon Schematic Patched");
+	//`Log("Squad T2 Cannon Schematic Patched");
 }
 
 static function PatchSquadBuildT2Grem()
@@ -486,7 +530,6 @@ static function PatchSquadBuildT2Grem()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('Gremlin_MG_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('Gremlin_MG_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's image in Engineering to this mod's custom images
@@ -495,11 +538,11 @@ static function PatchSquadBuildT2Grem()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk2";
 		}
 	}
-	//`log("Squad T2 Gremlin Schematic Patched");
+	//`Log("Squad T2 Gremlin Schematic Patched");
 }
 
 static function PatchSquadBuildT3Arm()
@@ -512,7 +555,6 @@ static function PatchSquadBuildT3Arm()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('MediumPoweredArmor_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('MediumPoweredArmor_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's image in Engineering to this mod's custom images
@@ -521,11 +563,11 @@ static function PatchSquadBuildT3Arm()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Armor_Mk3";
 		}
 	}
-	//`log("Squad T3 Armour Schematic Patched");
+	//`Log("Squad T3 Armour Schematic Patched");
 }
 
 static function PatchSquadBuildT3Wep()
@@ -538,7 +580,6 @@ static function PatchSquadBuildT3Wep()
 
 	// Find the schematic template
 	AllItems = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-	CurrentSchematic = X2SchematicTemplate(AllItems.FindItemTemplate('Cannon_BM_Schematic'));
 	AllItems.FindDataTemplateAllDifficulties('Cannon_BM_Schematic', DifficultyTemplates);
 	
 	// Change the schematic's image in Engineering to this mod's custom images
@@ -547,11 +588,11 @@ static function PatchSquadBuildT3Wep()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Cannon_Mk3";
 		}
 	}
-	//`log("Squad T3 Cannon Schematic Patched");
+	//`Log("Squad T3 Cannon Schematic Patched");
 }
 
 static function PatchSquadBuildT3Grem()
@@ -573,11 +614,11 @@ static function PatchSquadBuildT3Grem()
 		CurrentSchematic = X2SchematicTemplate(DifficultyTemplate);
 		if ( CurrentSchematic != none )
 		{
-			CurrentSchematic.strImage = "";
+			//`Log(CurrentSchematic.DataName $ " patched!");
 			CurrentSchematic.strImage = "img:///UILibrary_MW.Inv_Drone_Mk3";
 		}
 	}
-	//`log("Squad T3 Gremlin Schematic Patched");
+	//`Log("Squad T3 Gremlin Schematic Patched");
 }
 
 //================================================================================================================
@@ -668,8 +709,6 @@ static event OnLoadedSavedGame()
 	PatchSparkTechs();
 	PatchSparkSlots();
 	PatchBreakthrough();
-	PatchBondmates();
-	PatchSparkBonding();
 }
 
 static event OnExitPostMissionSequence()
