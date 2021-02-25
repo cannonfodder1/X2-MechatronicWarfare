@@ -1,49 +1,49 @@
 class X2Ability_SparkAbilitySet_MW extends X2Ability
 	dependson(XComGameStateContext_Ability) config(GameData_SoldierSkills);
 
-	var config int MWREPAIR_HEAL;
-	var config int MWREPAIR_COOLDOWN;
-	var config int HEAVYDUTY_EXTRAHEAL;
+var config int MWREPAIR_HEAL;
+var config int MWREPAIR_COOLDOWN;
+var config int HEAVYDUTY_EXTRAHEAL;
 
-	var config int KS_COOLDOWN;
+var config int KS_COOLDOWN;
 
-	var config int CS_COOLDOWN;
+var config int CS_COOLDOWN;
 
-	var config int OBLITERATOR_DMG;
+var config int OBLITERATOR_DMG;
 
-	var config int COLLATERAL_COOLDOWN;
-	var config int COLLATERAL_AMMO;
-	var config int COLLATERAL_RADIUS;
-	var config int COLLATERAL_ENVDMG;
+var config int COLLATERAL_COOLDOWN;
+var config int COLLATERAL_AMMO;
+var config int COLLATERAL_RADIUS;
+var config int COLLATERAL_ENVDMG;
 
-	var config int NEUTRALIZE_COOLDOWN;
-	var config int NEUTRALIZE_RADIUS;
+var config int NEUTRALIZE_COOLDOWN;
+var config int NEUTRALIZE_RADIUS;
 
-	var config int BOMBARDMENT_COOLDOWN;
-	var config int BOMBARDMENT_RADIUS;
-	var config int BOMBARDMENT_ENVDMG;
+var config int BOMBARDMENT_COOLDOWN;
+var config int BOMBARDMENT_RADIUS;
+var config int BOMBARDMENT_ENVDMG;
 
-	var config int LS_COOLDOWN;
+var config int LS_COOLDOWN;
 
-	var config int TRIANGULATION_HITMOD;
+var config int TRIANGULATION_HITMOD;
 
-	var config int SUPERNOVA_CHARGES;
-	var config int SUPERNOVA_COOLDOWN;
-	var config int SUPERNOVA_RADIUS_METERS;
-	var config int SUPERNOVA_RADIUS_SQ;
-	var config WeaponDamageValue SUPERNOVA_DMG;
-	var config int SUPERNOVA_ENVDMG;
+var config int SUPERNOVA_CHARGES;
+var config int SUPERNOVA_COOLDOWN;
+var config int SUPERNOVA_RADIUS_METERS;
+var config int SUPERNOVA_RADIUS_SQ;
+var config WeaponDamageValue SUPERNOVA_DMG;
+var config int SUPERNOVA_ENVDMG;
 
-	var config int OVERCLOCK_HACK;
-	var config int OVERCLOCK_AIM;
-	var config int OVERCLOCK_MOB;
-	var config int OVERCLOCK_CRIT;
+var config int OVERCLOCK_HACK;
+var config int OVERCLOCK_AIM;
+var config int OVERCLOCK_MOB;
+var config int OVERCLOCK_CRIT;
 
-	var config int REBOOT_HACK;
-	var config int REBOOT_AIM;
-	var config int REBOOT_MOB;
+var config int REBOOT_HACK;
+var config int REBOOT_AIM;
+var config int REBOOT_MOB;
 
-	var config float LAYERED_MULT;
+var config float LAYERED_MULT;
 	
 static function array<X2DataTemplate> CreateTemplates()
 {
@@ -73,6 +73,7 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(Overclock());
 	Templates.AddItem(PurePassive('OverclockPassive', "img:///UILibrary_MW.UIPerk_overclock"));
 	Templates.AddItem(LayeredArmour());
+	Templates.AddItem(FusionReactor());
 
 	return Templates;
 }
@@ -160,7 +161,6 @@ static function X2AbilityTemplate RepairMW()
 	
 	return Template;
 }
-
 
 static function X2AbilityTemplate RoboticChassis()
 {
@@ -1478,3 +1478,86 @@ static function X2AbilityTemplate LayeredArmour()
 
 	return Template;
 }
+
+static function X2AbilityTemplate FusionReactor()
+{
+	local X2AbilityTemplate			Template;
+	local X2Effect_FusionReactor	FieldEffect;
+	local X2Effect_Persistent		RepairEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'FusionReactor');
+	Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer);
+
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_MW.UIPerk_repair";
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	FieldEffect = new class 'X2Effect_FusionReactor';
+	FieldEffect.BuildPersistentEffect(1, true, false);
+	FieldEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, true, , Template.AbilitySourceName);
+	Template.AddTargetEffect(FieldEffect);
+	
+	// Persistent effect that handles repair at the end of each turn
+	RepairEffect = new class'X2Effect_Persistent';
+	RepairEffect.BuildPersistentEffect(1, true, false, false, eGameRule_PlayerTurnEnd);
+	RepairEffect.EffectTickedFn = FusionReactor_TurnEndRepair_EffectTicked;
+	RepairEffect.EffectTickedVisualizationFn = FusionReactor_TurnEndRepair_Visualization;
+	RepairEffect.EffectName = 'FusionRepair';
+	RepairEffect.DuplicateResponse = eDupe_Ignore;
+	Template.AddTargetEffect(RepairEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: no visualization on purpose!
+
+	return Template;
+}
+
+function bool FusionReactor_TurnEndRepair_EffectTicked(X2Effect_Persistent PersistentEffect, const out EffectAppliedData ApplyEffectParameters, XComGameState_Effect kNewEffectState, XComGameState NewGameState, bool FirstApplication)
+{
+	local XComGameState_Ability Ability;
+	local XComGameState_Unit SourceUnit;
+	local UnitValue	FusionValue;
+	local int RepairAmount;
+	
+	SourceUnit = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(ApplyEffectParameters.TargetStateObjectRef.ObjectID));
+	SourceUnit.GetUnitValue('FusionEnergy', FusionValue);
+	RepairAmount = int(FusionValue.fValue);
+	
+	if (SourceUnit != none && RepairAmount > 0)
+	{
+		SourceUnit = XComGameState_Unit(NewGameState.ModifyStateObject(class'XComGameState_Unit', ApplyEffectParameters.TargetStateObjectRef.ObjectID));
+		SourceUnit.SetUnitFloatValue('FusionEnergy', 0, eCleanup_BeginTactical);
+		SourceUnit.ModifyCurrentStat(eStat_HP, RepairAmount);
+
+		//`TRIGGERXP('XpHealDamage', ApplyEffectParameters.TargetStateObjectRef, SourceUnit.GetReference(), NewGameState);
+	}
+}
+
+static function FusionReactor_TurnEndRepair_Visualization(XComGameState VisualizeGameState, out VisualizationActionMetadata ActionMetadata, const name EffectApplyResult)
+{
+	local XComGameState_Unit OldUnit, NewUnit;
+	local X2Action_PlaySoundAndFlyOver SoundAndFlyOver;
+	local int Healed;
+	local string Message;
+
+	OldUnit = XComGameState_Unit(ActionMetadata.StateObject_OldState);
+	NewUnit = XComGameState_Unit(ActionMetadata.StateObject_NewState);
+
+	if (OldUnit != none && NewUnit != None)
+	{
+		Healed = NewUnit.GetCurrentStat(eStat_HP) - OldUnit.GetCurrentStat(eStat_HP);
+		
+		if (Healed != 0)
+		{
+			SoundAndFlyOver = X2Action_PlaySoundAndFlyOver(class'X2Action_PlaySoundAndFlyOver'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
+			Message = Repl(class'X2Effect_ApplyRepairHeal'.default.HealedMessage, "<Heal/>", Healed);
+			SoundAndFlyOver.SetSoundAndFlyOverParameters(None, Message, '', eColor_Good);
+		}
+	}
+}
+

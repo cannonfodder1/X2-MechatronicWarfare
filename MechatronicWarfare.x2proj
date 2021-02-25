@@ -96,6 +96,9 @@
     <Content Include="Src\MechatronicWarfare\Classes\X2Effect_DisablingDamage.uc">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="Src\MechatronicWarfare\Classes\X2Effect_FusionReactor.uc">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Src\MechatronicWarfare\Classes\X2Effect_HalfDamage.uc">
       <SubType>Content</SubType>
     </Content>
@@ -121,6 +124,9 @@
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\MechatronicWarfare\Classes\X2TargetingMethod_Collateral.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\MechatronicWarfare\Classes\XComGameState_Effect_FusionReactor.uc">
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\MechatronicWarfare\Classes\XcomGameState_TacticalCleanup_MW.uc">
