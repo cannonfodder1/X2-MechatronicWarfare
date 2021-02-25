@@ -42,28 +42,27 @@ function EventListenerReturn CleanupTacticalGame(Object EventData, Object EventS
 
 	BattleData = XComGameState_BattleData(History.GetSingleGameStateObjectForClass(class'XComGameState_BattleData'));
 
-		ItemTemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
-		ItemTemplate = ItemTemplateManager.FindItemTemplate('CorpseSpark');
-		for (i = 0; i < XComHQ.Squad.Length; ++i) 
+	ItemTemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
+	ItemTemplate = ItemTemplateManager.FindItemTemplate('CorpseSpark');
+	for (i = 0; i < XComHQ.Squad.Length; ++i) 
+	{
+	Unit = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectId(XComHQ.Squad[i].ObjectID));
+
+		if(Unit.GetMyTemplateName() == 'SparkSoldier' && Unit.IsDead())
 		{
-		Unit = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectId(XComHQ.Squad[i].ObjectID));
+			ItemState = ItemTemplate.CreateInstanceFromTemplate(NewGameState);
+			NewGameState.AddStateObject(ItemState);
+			ItemState.Quantity = 1;
+			ItemState.OwnerStateObject = XComHQ.GetReference();
+			XComHQ.PutItemInInventory(NewGameState, ItemState, true);
 
-			if(Unit.GetMyTemplateName() == 'SparkSoldier' && Unit.IsDead())
-			{
-				ItemState = ItemTemplate.CreateInstanceFromTemplate(NewGameState);
-				NewGameState.AddStateObject(ItemState);
-				ItemState.Quantity = 1;
-				ItemState.OwnerStateObject = XComHQ.GetReference();
-				XComHQ.PutItemInInventory(NewGameState, ItemState, true);
-
-				NewUnitState = XComGameState_Unit(NewGameState.CreateStateObject(class'XComGameState_Unit', Unit.ObjectID));
-				NewUnitState.bBodyRecovered = true;
-				NewGameState.AddStateObject(NewUnitState);
-			}
-
+			NewUnitState = XComGameState_Unit(NewGameState.CreateStateObject(class'XComGameState_Unit', Unit.ObjectID));
+			NewUnitState.bBodyRecovered = true;
+			NewGameState.AddStateObject(NewUnitState);
 		}
-	
 
+	}
+	
 	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 	return ELR_NoInterrupt;
 }

@@ -1,0 +1,1 @@
+﻿If you are reading this, I'm in the middle of updating the mod. For some reason, whenever I update the mod Steam replaces my existing description with whatever's in the mod's readme file. Refresh the page in a few minutes and it should be back to normal.
