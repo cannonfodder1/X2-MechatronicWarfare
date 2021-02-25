@@ -228,6 +228,7 @@ function RemakeSparkSoldier(XComGameState NewGameState, optional StateObjectRefe
 	local X2CharacterTemplate CharacterTemplate;
 	local XComGameState_HeadquartersXCom XComHQ;
 	local XComGameState_Unit NewSparkState, CopiedSparkState;
+	local int i, SparkRank;
 
 	History = class'XComGameStateHistory'.static.GetGameStateHistory();
 
@@ -256,7 +257,13 @@ function RemakeSparkSoldier(XComGameState NewGameState, optional StateObjectRefe
 		NewSparkState.SetCharacterName(CopiedSparkState.GetFirstName(), CopiedSparkState.GetLastName(), CopiedSparkState.GetNickName());
 		NewSparkState.SetCountry(CopiedSparkState.GetCountry());
 
-		NewSparkState.AddXp(CopiedSparkState.GetXPValue() - NewSparkState.GetXPValue());
+		// Thanks to TeslaRage for this method to rank up the spark to it's original rank!
+		SparkRank = CopiedSparkState.GetRank();
+		for (i = 0; i < SparkRank - 1; i++)
+		{
+			NewSparkState.RankUpSoldier(NewGameState);
+		}
+		NewSparkState.SetXPForRank(SparkRank);
 
 		NewSparkState.CopyKills(CopiedSparkState);
 		NewSparkState.CopyKillAssists(CopiedSparkState);
